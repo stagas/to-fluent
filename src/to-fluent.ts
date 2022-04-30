@@ -8,13 +8,6 @@ export type PropsType<T> = {
   [K in keyof T]: T[K] extends ValueConstructor ? ReturnType<T[K]> : T[K]
 }
 
-export type FluentNegated<C, T> =
-  & C
-  & {
-    [K in keyof T]: T[K] extends boolean ? Fluent<C, T>
-      : never
-  }
-
 export type Fluent<C, T> =
   & C
   & {
@@ -23,7 +16,10 @@ export type Fluent<C, T> =
       : never
   }
   & {
-    not: FluentNegated<C, T>
+    not: {
+      [K in keyof T]: T[K] extends boolean ? Fluent<C, T>
+        : never
+    }
   }
 
 /**

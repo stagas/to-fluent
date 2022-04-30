@@ -109,6 +109,20 @@ describe('cb = toFluent(settingsSchema, cb)', () => {
 
     `)).toContain('This expression is not callable.')
     // cb.not.bar('hello')
+
+    expect(typeTest(`
+      const cb = toFluent(
+        class {
+          foo = Boolean
+          bar?: string
+        },
+        settings => () => settings
+      )
+
+      cb.not('hello')
+
+    `)).toContain('This expression is not callable.')
+    // cb.not('hello')
   })
 
   it('passes arguments', () => {
