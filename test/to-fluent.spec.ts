@@ -1,10 +1,10 @@
 import { inspectWithPreamble } from '@n1kk/intspector'
-import { toFluent } from '../src'
+import { bool, toFluent } from '../src'
 
 const typeTest = (body: string) => {
   try {
     inspectWithPreamble(`
-      import { toFluent } from '../src'
+      import { toFluent, bool } from '../src'
       ${body}
     `)({})
     return true
@@ -20,8 +20,8 @@ describe('cb = toFluent(settingsSchema, cb)', () => {
   it('boolean and string optional', () => {
     const cb = toFluent(
       class {
-        foo = Boolean
-        bar = String
+        foo = bool
+        bar?: string
       },
       settings => () => settings
     )
@@ -33,8 +33,8 @@ describe('cb = toFluent(settingsSchema, cb)', () => {
 
     expect(typeTest(`
       const cb = toFluent(class {
-        foo = Boolean
-        bar = String
+        foo = bool
+        bar?: string
       }, settings => () => [settings.foo, settings.bar])
 
       cb.wrong()
@@ -44,8 +44,8 @@ describe('cb = toFluent(settingsSchema, cb)', () => {
 
     expect(typeTest(`
       const cb = toFluent(class {
-        foo = Boolean
-        bar = String
+        foo = bool
+        bar?: string
       }, settings => () => [settings.foo, settings.bar])
 
       cb.bar(123)()
@@ -86,7 +86,7 @@ describe('cb = toFluent(settingsSchema, cb)', () => {
   it('negate boolean', () => {
     const cb = toFluent(
       class {
-        foo = Boolean
+        foo = bool
         bar?: string
       },
       settings => () => settings
@@ -99,7 +99,7 @@ describe('cb = toFluent(settingsSchema, cb)', () => {
     expect(typeTest(`
       const cb = toFluent(
         class {
-          foo = Boolean
+          foo = bool
           bar?: string
         },
         settings => () => settings
@@ -113,7 +113,7 @@ describe('cb = toFluent(settingsSchema, cb)', () => {
     expect(typeTest(`
       const cb = toFluent(
         class {
-          foo = Boolean
+          foo = bool
           bar?: string
         },
         settings => () => settings
@@ -154,12 +154,9 @@ describe('cb = toFluent(settingsSchema, cb)', () => {
   it('kitchen sink optionals', () => {
     const cb = toFluent(
       class {
-        bool = Boolean
-        string = String
-        number = Number
-        boolType?: boolean
-        stringType?: string
-        numberType?: number
+        bool = bool
+        string?: string
+        number?: number
         object?: object
         objectType?: { specific: string }
       },

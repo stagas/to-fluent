@@ -2,11 +2,6 @@ import { omit } from 'pick-omit'
 
 export type Fn<T extends unknown[], R> = (...args: T) => R
 export type Class<T> = new(...args: any[]) => T
-export type ValueConstructor = typeof Boolean | typeof Number | typeof String
-
-export type PropsType<T> = {
-  [K in keyof T]: T[K] extends ValueConstructor ? ReturnType<T[K]> : T[K]
-}
 
 export type Fluent<C, T> =
   & C
@@ -22,54 +17,57 @@ export type Fluent<C, T> =
     }
   }
 
+export const bool = Symbol() as unknown as boolean
+
 /**
  * Convert a function with a settings object to fluent API.
  *
  * ```ts
+ * import { toFluent, bool } from 'to-fluent'
+ *
  * const cb = toFluent(
  *   class {
- *     foo = Boolean
- *     bar?: string
+ *     foo = bool // indicate boolean but initially omitted
+ *     bar?: string // optional
+ *     zoo = 123 // a default
  *   },
  *   settings => () => settings
  * )
  *
- * expect(cb()).toEqual({})
- * expect(cb.foo()).toEqual({ foo: true })
- * expect(cb.not.foo()).toEqual({ foo: false })
- * expect(cb.bar('hello')()).toEqual({ bar: 'hello' })
- * expect(cb.bar('hello').foo()).toEqual({ foo: true, bar: 'hello' })
+ * expect(cb()).toEqual({ zoo: 123 })
+ * expect(cb.foo()).toEqual({ foo: true, zoo: 123 })
+ * expect(cb.not.foo()).toEqual({ foo: false, zoo: 123 })
+ * expect(cb.bar('hello')()).toEqual({ bar: 'hello', zoo: 132 })
+ * expect(cb.foo.bar('hello').zoo(456)())
+ *   .toEqual({ foo: true, bar: 'hello', zoo: 456 })
  * ```
  */
 export const toFluent = <
   T extends Class<any>,
   C extends Fn<any, any>,
+  S extends InstanceType<T>,
 >(
   Schema: T,
-  cb: (settings: PropsType<InstanceType<T>>) => C,
+  cb: (settings: S) => C,
 ) => {
-  const constructorKeys = Object.entries(new Schema())
-    .filter(([, x]: any) => [Boolean, Number, String].includes(x))
-    .map(([key]) => key)
+  const bools = Object.entries(new Schema()).filter(([, x]) => x === bool || typeof x === 'boolean')
+  const flags = bools.map(([key]) => key)
+  const omitted = bools.filter(([, x]) => x === bool).map(([key]) => key)
 
-  const booleanKeys = Object.entries(new Schema())
-    .filter(([, x]) => x === Boolean || typeof x === 'boolean')
-    .map(([key]) => key)
-
-  let settings: InstanceType<T>
-  const reset = () => settings = omit(new Schema(), constructorKeys) as InstanceType<T>
+  let settings: S
+  const reset = () => settings = omit(new Schema(), omitted) as S
   reset()
 
-  let negateNext = false
+  let not = false
 
   return new Proxy(cb, {
     get(_, key: string, receiver) {
       if (key === 'not') {
-        negateNext = true
+        not = true
         return receiver
-      } else if (booleanKeys.includes(key)) {
-        settings[key] = negateNext ? false : true
-        negateNext = false
+      } else if (flags.includes(key)) {
+        settings[key] = not ? false : true
+        not = false
         return receiver
       } else {
         return (value: any) => {
@@ -79,9 +77,9 @@ export const toFluent = <
       }
     },
     apply(_, self, args) {
-      const s: InstanceType<T> = { ...settings }
+      const s: S = { ...settings }
       reset()
       return cb.call(self, s).apply(self, args)
     },
-  }) as Fluent<C, Required<PropsType<InstanceType<T>>>>
+  }) as Fluent<C, Required<S>>
 }
