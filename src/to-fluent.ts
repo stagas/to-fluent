@@ -2,7 +2,6 @@ import { omit } from 'pick-omit'
 
 export type Fn<T extends unknown[], R> = (...args: T) => R
 export type Class<T> = new(...args: any[]) => T
-
 export type Fluent<C, T> =
   & C
   & {

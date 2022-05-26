@@ -1,5 +1,6 @@
-import { inspectWithPreamble } from '@n1kk/intspector'
+import { inspectWithPreamble, setOptions } from '@n1kk/intspector'
 import { bool, toFluent } from '../src'
+setOptions(require('../tsconfig.json'), true)
 
 const typeTest = (body: string) => {
   try {
