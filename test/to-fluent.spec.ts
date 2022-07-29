@@ -214,4 +214,44 @@ describe('cb = toFluent(settingsSchema, cb)', () => {
       object: { thing: true },
     })
   })
+
+  it('currying', () => {
+    const cb = toFluent(
+      class {
+        bool = bool
+        string?: string
+        number?: number
+        object?: object
+        objectType?: { specific: string }
+      },
+      settings => () => settings
+    )
+
+    expect(cb()).toEqual({})
+
+    const withBool = cb.bool
+    expect(withBool()).toEqual({
+      bool: true,
+    })
+
+    expect(withBool.number(123)()).toEqual({
+      bool: true,
+      number: 123,
+    })
+
+    expect(withBool.string('foo')()).toEqual({
+      bool: true,
+      string: 'foo',
+    })
+
+    const withString = cb.string('foo')
+    expect(withString()).toEqual({
+      string: 'foo',
+    })
+
+    expect(withString.number(42)()).toEqual({
+      string: 'foo',
+      number: 42,
+    })
+  })
 })

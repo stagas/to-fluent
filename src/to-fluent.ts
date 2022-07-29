@@ -1,13 +1,12 @@
 import { omit } from 'pick-omit'
 
-export type Fn<T extends unknown[], R> = (...args: T) => R
-export type Class<T> = new(...args: any[]) => T
+import type { Class, Fn } from 'everyday-types'
+
 export type Fluent<C, T> =
   & C
   & {
-    [K in keyof T]: T[K] extends infer U ? U extends boolean ? Fluent<C, T>
-    : Fn<[U], Fluent<C, T>>
-      : never
+    [K in keyof T]: T[K] extends boolean ? Fluent<C, T>
+      : Fn<[T[K]], Fluent<C, T>>
   }
   & {
     not: {
@@ -53,32 +52,28 @@ export const toFluent = <
   const flags = bools.map(([key]) => key)
   const omitted = bools.filter(([, x]) => x === bool).map(([key]) => key)
 
-  let settings: S
-  const reset = () => settings = omit(new Schema(), omitted) as S
-  reset()
+  const settings = omit(new Schema(), omitted) as S
 
   let not = false
 
-  return new Proxy(cb, {
-    get(_, key: string, receiver) {
-      if (key === 'not') {
-        not = true
-        return receiver
-      } else if (flags.includes(key)) {
-        settings[key] = not ? false : true
-        not = false
-        return receiver
-      } else {
-        return (value: any) => {
-          settings[key] = value
+  const bind = (settings: S): Fluent<C, Required<S>> =>
+    new Proxy(cb, {
+      get(_, key: string, receiver) {
+        if (key === 'not') {
+          not = true
           return receiver
+        } else if (flags.includes(key)) {
+          const value = not ? false : true
+          not = false
+          return bind({ ...settings, [key]: value })
+        } else {
+          return (value: any) => {
+            return bind({ ...settings, [key]: value })
+          }
         }
-      }
-    },
-    apply(_, self, args) {
-      const s: S = { ...settings }
-      reset()
-      return cb.call(self, s).apply(self, args)
-    },
-  }) as Fluent<C, Required<S>>
+      },
+      apply: (_, self, args) => cb.call(self, { ...settings }).apply(self, args),
+    }) as Fluent<C, Required<S>>
+
+  return bind(settings)
 }
