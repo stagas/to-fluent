@@ -15,7 +15,7 @@ export type Fluent<C, T> =
     }
   }
 
-export const bool = Symbol() as unknown as boolean
+export const bool = Symbol.for('to-fluent-bool') as unknown as boolean
 
 /**
  * Convert a function with a settings object to fluent API.
