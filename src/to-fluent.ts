@@ -5,13 +5,13 @@ import type { Class, Fn } from 'everyday-types'
 export type Fluent<C, T> =
   & C
   & {
-    [K in keyof T]: T[K] extends boolean ? Fluent<C, T>
-      : Fn<[T[K]], Fluent<C, T>>
+    [K in keyof T]-?: T[K] extends boolean ? Fluent<C, T>
+    : Fn<[T[K]], Fluent<C, T>>
   }
   & {
     not: {
-      [K in keyof T]: T[K] extends boolean ? Fluent<C, T>
-        : never
+      [K in keyof T]-?: T[K] extends boolean ? Fluent<C, T>
+      : never
     }
   }
 
@@ -71,6 +71,10 @@ export const toFluent = <
             return bind({ ...settings, [key]: value })
           }
         }
+      },
+      construct(_, args) {
+        const ctor = cb.call(self, { ...settings }) as any
+        return new ctor(...args)
       },
       apply: (_, self, args) => cb.call(self, { ...settings }).apply(self, args),
     }) as Fluent<C, Required<S>>

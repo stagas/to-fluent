@@ -1,3 +1,4 @@
+// @env node
 import { inspectWithPreamble, setOptions } from '@n1kk/intspector'
 import { bool, toFluent } from '../src'
 setOptions(require('../tsconfig.json'), true)
